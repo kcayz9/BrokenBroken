@@ -9,30 +9,65 @@ public class Player : MonoBehaviour
     public bool isTouchRight;
     public bool isTouchLeft;
 
+    public int score;       //스코어 만들 준비 
     public int speed;
     public int power;
-    public int score;
+    public int health;
+    
     public float maxShotLoading;
     public float curShotLoading;
     public float rotateSpeed;
 
     public GameObject bulletObj;
+
+    public bool[] joyControl;
+    public bool isControl;
+
     void Update()
     {
         Move();
-        Fire();
+       // Fire();
+    }
+    public void JoyPanel(int type)
+    {
+        for (int index = 0; index < 9; index++)
+        {
+            joyControl[index] = index == type;
+        }
+    }
+
+    public void JoyDown()
+    {
+        isControl = true;
+    }
+
+    public void JoyUp()
+    {
+        isControl = false;
     }
 
     void Move()
     {
-        // 그냥 움직임 
+        //#.Keyboard Control Value
         float h = Input.GetAxisRaw("Horizontal");
-        transform.Rotate(0, 0, Time.deltaTime * rotateSpeed, Space.Self);   // 상자가 속도만큼 스스로 움직이는 것 
-        if ((isTouchRight && h == 1) || (isTouchLeft && h == -1))
+        float v = Input.GetAxisRaw("Vertical");
+
+        //#.Joy Control Value
+        if (joyControl[0]) { h = -1; v = 1; }   // 방향 버튼 변수에 따라 수평, 수직 값 적용 
+        if (joyControl[1]) { h = 0; v = 1; }
+        if (joyControl[2]) { h = 1; v = 1; }
+        if (joyControl[3]) { h = -1; v = 0; }
+        if (joyControl[4]) { h = 0; v = 0; }
+        if (joyControl[5]) { h = 1; v = 0; }
+        if (joyControl[6]) { h = -1; v = -1; }
+        if (joyControl[7]) { h = 0; v = -1; }
+        if (joyControl[8]) { h = 1; v = -1; }
+
+        if ((isTouchRight && h == 1) || (isTouchLeft && h == -1) || !isControl)  //방향 Down 변수 조건을 추가형 UI 누른 상태에서만 작동 
             h = 0;
 
-        float v = Input.GetAxisRaw("Vertical");
-        if ((isTouchTop && v == 1) || (isTouchBottom && v == -1))
+
+        if ((isTouchTop && v == 1) || (isTouchBottom && v == -1) || !isControl)  //방향 Down 변수 조건을 추가형 UI 누른 상태에서만 작동 
             v = 0;
 
         Vector3 curPos = transform.position;       // 현재 
@@ -42,19 +77,19 @@ public class Player : MonoBehaviour
         transform.position = curPos + nexPos;
     }
 
-    void Fire()
-    {
-        if (!Input.GetButton("Fire1"))
-            return;
-
-       // if (curShotLoading < maxShotLoading)
-         //   return;
-
-        GameObject bullet = Instantiate(bulletObj, transform.position, transform.rotation);
-        Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
-        rigid.AddForce(Vector2.up * 10, ForceMode2D.Impulse);
- 
-    }
+         //void Fire()
+         //{
+         //    if (!Input.GetButton("Fire1"))
+         //        return;
+         //
+         //   // if (curShotLoading < maxShotLoading)
+         //     //   return;
+         //
+         //    GameObject bullet = Instantiate(bulletObj, transform.position, transform.rotation);
+         //    Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+         //    rigid.AddForce(Vector2.up * 10, ForceMode2D.Impulse);
+         //   
+         //}
 
     void OnTriggerEnter2D(Collider2D other)
     {
@@ -77,14 +112,54 @@ public class Player : MonoBehaviour
             }
         }
         
-        if(other.gameObject.tag == "Item")
+        else if(other.gameObject.tag == "Enemy")
         {
-            Item item = other.gameObject.GetComponent<Item>();
-            item.type = "Coin";
+            Enemy enemy = other.gameObject.GetComponent<Enemy>();
+            switch (enemy.type)
+            {
+        
+                case "Mud":
+                    score-=1;
+                    health -=1;
+                    break;
+
+                case "Bone":
+                    score-=2;
+                    health -= 2;
+                    break;
+
+                case "Rocks":
+                    score-=3;
+                    health -= 3;
+                    break;
+
+                case "BrokenTree":
+                    score-=4;
+                    health -= 4;
+                    break;
+
+                case "BrokenTree2":
+                    score-=4;
+                    health -= 5;
+                    break;
+
+            }
             Destroy(other.gameObject);
         }
 
+        else if (other.gameObject.tag == "Item")
+        {
+            Item item = other.gameObject.GetComponent<Item>();
+            switch (item.type)
+            {
+                case "Coin":
+                    score += 5;
+                    break;
+            }
+            Destroy(other.gameObject);
+        }
     }
+
     void OnTriggerExit2D(Collider2D other)
     {
         if (other.gameObject.tag == "Border")
